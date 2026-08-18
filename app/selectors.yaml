@@ -1,0 +1,66 @@
+# Centralized selector config.
+
+search:
+  input_selector: "input#searchboxinput"
+
+results_feed:
+  # The scrollable container holding the list of result cards.
+  role: "feed"
+  css_fallback: "div[role='feed']"
+
+result_card:
+  # Each individual listing card inside the feed.
+  css: "div[role='feed'] > div > div[jsaction]"
+  name_selector: "a.hfpxzc"          # anchor wrapping the whole card; has aria-label = name
+  link_attr: "href"                    # the place URL, contains @lat,lng and place id
+  rating_selector: "span[role='img']"  # aria-label like "4.5 stars 213 Reviews"
+  end_of_list_text: "You've reached the end of the list"
+
+detail_pane:
+  title: "h1.DUwDvf"
+  category: "button.DkEaL"
+  address_button: "button[data-item-id='address']"
+  phone_button: "button[data-item-id^='phone:tel:']"
+  website_link: "a[data-item-id='authority']"
+  plus_code_button: "button[data-item-id='oloc']"
+  rating_text: "div.F7nice"
+  claimed_text_hint: "Claim this business"   # presence => NOT claimed
+  sub_title: "div.LBgpqf"
+  pricing: "span.mgr77e"
+  description: "div.PYvSYb"
+  hours_status: "div.MkV9"
+  hours_dropdown: "button[data-item-id='oh'], button[aria-label*='hours'], button[aria-label*='Hours'], div.MkV9 button"
+  hours_table: "table.eK4R0e"
+  star_histogram: "tr.GBkF3d"
+  top_image: "button.aoRNLd img"
+  # Tried in order after the primary selector if src is missing/late.
+  top_image_fallbacks:
+    - "div.ZKCDEc img"
+    - "button.FpEdX img"
+    - "div[role='main'] button img[src*='googleusercontent']"
+  photo_tags: "div.Qi3Lb"
+  menu_url: "a[data-item-id='menu']"
+  services: "div.LTs0Pb"
+  located_in: "a[data-item-id='located-in']"
+  amenities: "div.e2moi"
+  attributes: "div.M37doe"
+  external_urls: "a[data-item-id^='url']"
+
+
+tabs:
+  reviews_tab: "button[role='tab'][aria-label*='Reviews'], button[role='tab']:has-text('Reviews')"
+  tickets_tab: "button[role='tab'][aria-label*='Tickets'], button[role='tab']:has-text('Tickets')"
+
+tickets:
+  admission_container: "div[aria-label*='Admission'], div:has-text('Admission')"
+  price_text: "span[aria-label*='price'], div.title"
+
+consent_dialog:
+  accept_button_text: "Accept all"
+
+retry:
+  max_attempts: 3
+  backoff_base_seconds: 1.5
+
+
+
