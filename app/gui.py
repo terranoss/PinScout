@@ -10,12 +10,15 @@ from __future__ import annotations
 import queue
 import threading
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
+from datetime import datetime
+from pathlib import Path
+
 
 from app.models import Listing, EXPORT_COLUMN_ORDER, FIELD_TO_EXPORT_HEADER
 from app.exporter import export
 from app import scraper_engine  # background asyncio worker, see main.py
-from app.version import get_git_short_sha
+from app.version import get_app_version
 
 # Map export headers to model field names for treeview extraction
 EXPORT_HEADER_TO_FIELD = {v: k for k, v in FIELD_TO_EXPORT_HEADER.items()}
@@ -169,10 +172,10 @@ class ScraperGUI:
             anchor="w",
         ).pack(fill="x", padx=18, pady=(0, 22))
 
-        rev = get_git_short_sha()
+        version = get_app_version()
         tk.Label(
             rail,
-            text=f"rev {rev}",
+            text=version,
             bg=RAIL_BG,
             fg=RAIL_MUTED,
             font=("Segoe UI", 8),
@@ -474,11 +477,46 @@ class ScraperGUI:
         if not data_to_export:
             messagebox.showinfo("No data", "There is no data to export yet.")
             return
-        out_path = export(data_to_export, fmt="xlsx")
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"gmaps_results_{timestamp}.xlsx"
+
+        file_path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="Export Scraped Listings",
+            defaultextension=".xlsx",
+            initialfile=default_filename,
+            filetypes=[
+                ("Excel Workbook (*.xlsx)", "*.xlsx"),
+                ("CSV (Comma delimited) (*.csv)", "*.csv"),
+                ("All Files (*.*)", "*.*"),
+            ],
+        )
+
+        if not file_path:
+            return  # User cancelled the dialog
+
+        target_path = Path(file_path)
+        fmt = "csv" if target_path.suffix.lower() == ".csv" else "xlsx"
+
+        out_path, photos_dir = export(data_to_export, destination=target_path, fmt=fmt)
         # Export mutates in-memory Listing objects (Saved_Image_Name + Status),
         # so refresh the table to reflect photo download results.
         self._apply_filters()
-        messagebox.showinfo("Export complete", f"Saved {len(data_to_export)} record(s) to:\n{out_path}")
+
+        has_photos = any(getattr(l, "saved_image_name", None) for l in data_to_export)
+        if has_photos and photos_dir.exists():
+            msg = (
+                f"Saved {len(data_to_export)} record(s):\n\n"
+                f"• Spreadsheet:\n  {out_path}\n\n"
+                f"• Photos Folder:\n  {photos_dir}"
+            )
+        else:
+            msg = f"Saved {len(data_to_export)} record(s) to:\n{out_path}"
+
+        messagebox.showinfo("Export complete", msg)
+
+
 
     def _log(self, line: str, tag: str | None = None) -> None:
         self.progress_text.config(state="normal")

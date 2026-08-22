@@ -25,7 +25,7 @@ MAPS_REFERER = "https://www.google.com/maps"
 logger = logging.getLogger(__name__)
 
 
-async def download_photos(listings: list[Listing]) -> None:
+async def download_photos(listings: list[Listing], photos_dir: Path | None = None) -> None:
     """Download main cover photos for listings; set sstatus for every listing."""
     for listing in listings:
         if not listing.top_image_url:
@@ -35,7 +35,8 @@ async def download_photos(listings: list[Listing]) -> None:
     if not targets:
         return
 
-    PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+    dest_dir = photos_dir or PHOTOS_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
 
     async with async_playwright() as p:
@@ -46,7 +47,7 @@ async def download_photos(listings: list[Listing]) -> None:
             }
         )
         try:
-            tasks = [_download_one(listing, request_context, semaphore) for listing in targets]
+            tasks = [_download_one(listing, request_context, semaphore, dest_dir) for listing in targets]
             await asyncio.gather(*tasks, return_exceptions=True)
         finally:
             await request_context.dispose()
@@ -56,7 +57,9 @@ async def _download_one(
     listing: Listing,
     request_context: APIRequestContext,
     semaphore: asyncio.Semaphore,
+    photos_dir: Path = PHOTOS_DIR,
 ) -> None:
+
     if not listing.top_image_url:
         listing.sstatus = "no_img"
         return
@@ -83,7 +86,7 @@ async def _download_one(
                         safe_name = _sanitize_filename(listing.name or "listing")
                         rec_id = listing.id or "0"
                         filename = f"{rec_id}_{safe_name}.jpg"
-                        filepath = PHOTOS_DIR / filename
+                        filepath = photos_dir / filename
                         with open(filepath, "wb") as f:
                             f.write(body)
                         listing.saved_image_name = filename
@@ -129,15 +132,16 @@ async def _download_one(
         )
 
 
-def download_photos_sync(listings: list[Listing]) -> None:
+def download_photos_sync(listings: list[Listing], photos_dir: Path | None = None) -> None:
     """Synchronous wrapper to download cover photos at export time."""
     try:
-        asyncio.run(download_photos(listings))
+        asyncio.run(download_photos(listings, photos_dir=photos_dir))
     except Exception as exc:
         logger.exception("download_photos_sync failed: %s", exc)
         for listing in listings:
             if listing.sstatus is None:
                 listing.sstatus = "batch_error"
+
 
 
 def _sanitize_filename(name: str) -> str:

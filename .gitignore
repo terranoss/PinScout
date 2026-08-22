@@ -32,6 +32,19 @@ MANIFEST
 *.manifest
 *.spec
 
+# Windows Installer build scripts (private)
+build.ps1
+installer.iss
+nuitka-build-guide.md
+
+# Nuitka build artefacts
+*.build/
+*.dist/
+*.onefile-build/
+installer_output/
+nuitka-crash-report.xml
+
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
